@@ -1,4 +1,4 @@
-import re, os, sys, site
+import re, os, site
 module_path = os.path.join(os.path.join(os.getcwd(), 'mod'))
 site.addsitedir(module_path)
 import tkinter as tk
@@ -7,13 +7,12 @@ from tkinter import filedialog
 from tkinter import messagebox
 #import tkinter.font as tkFont
 from time import time
-import polars
 from datetime import datetime
 from PIL import Image, ImageTk
 from io import BytesIO
 
 #моё
-import programstate, btn, ui, loaders, config, img
+import programstate, btn, ui, loaders, config, img, filemanager
 
 class LogExplorer(tk.Frame):
     def __init__(self, parent):
@@ -22,14 +21,14 @@ class LogExplorer(tk.Frame):
         # переменные для перетаскивания границы между окнами
         self.dragging = False
         self.start_y = 0
-        #self.start_tree_height = 0
-        #self.start_request_height = 0
 
         self.column_names = []
         self.LogType = config.DEFAULT_LOG_TYPE
         self.LogTypes = config.LOG_TYPES 
         self.Delimiter = config.DEFAULT_DELIMITER
-        self.filelist =[] #сюда будем складывать списки логов. Список передадим поларсу
+        self.Timezone = config.DEFAULT_TIMEZONE
+        #self.filelist =[] #сюда будем складывать списки логов. Список передадим поларсу
+        self.file_manager = filemanager.FileManager(self)
         self.json_path = "" #здесь будут храниться данные о состоянии программы (конфиг, текущие данные и тп)
         self.sort_direction = {}
         self.last_height = config.WINDOW_HEIGHT 
@@ -92,9 +91,7 @@ class LogExplorer(tk.Frame):
             yscrollcommand=self.scrollbar.set,
             selectmode=tk.EXTENDED
         )
-        self.files_listbox.delete(0, tk.END)
-        for sf in self.filelist:
-            self.files_listbox.insert(tk.END, sf)
+        self.file_manager.setup_listbox(self.files_listbox)
         self.files_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
         # Configure the scrollbar
@@ -107,131 +104,30 @@ class LogExplorer(tk.Frame):
 
     # удаление всех файлов из списка журналов
     def clear_files(self):
-        print("Удалить все журналы")
-        self.files_listbox.delete(0, tk.END)
-        self.filelist.clear()
-        programstate.save_data(self)
+        self.file_manager.clear_files()
+
     # удаление выбранных файлов из списка журналов
     def clear_selected_files(self):
-        print("Удалить выбранные журналы")
-        ListToDelete = self.files_listbox.curselection()
-        print(ListToDelete)
-        for item in reversed(ListToDelete): # в обратном порядке потому, что при удалении элемента, список пересчитывается и индексы смещаются
-            self.files_listbox.delete(item)
-        print(type(self.filelist))
-        self.filelist.clear()
-        for i in self.files_listbox.get(0, self.files_listbox.size()):
-            self.filelist.append(i)
-        print(self.filelist)
-        programstate.save_data(self)
+        self.file_manager.clear_selected_files()
+
     # Вызов окна диалога выбора файлов и добавление выбранного в список с исключением дубликатов
     def select_files(self):
-            filepaths = filedialog.askopenfilenames(
-                title="Выбор журналов",
-                filetypes=(
-                    ("Все файлы", "*.*"),
-                    ("Журналы", "*.log"),
-                )
-            )
-            if filepaths != "":
-                # делаем set, чтобы исключить дубликаты файлов
-                temp_list = set()
-                for i in self.filelist:
-                    temp_list.add(i)
-                self.files_listbox.delete(0, tk.END)
-                self.filelist.clear()
-                for filepath in filepaths:
-                    temp_list.add(filepath)
-                self.filelist = list(temp_list)
-                for i in temp_list:
-                    self.files_listbox.insert(tk.END, i)
-                programstate.save_data(self)
+        self.file_manager.select_files()
+
     # подключает файлы, указанные в списке "Выбранные журналы" и грузит минимальную выборку (дефолтный SQL) 
     def data_reload(self):
         self.LoadData()
         self.clear_treeview()
         self.PopulateDataGrid()
-    # запускает выборку с SQL-запросом из окна редактора запроса
-    def data_refresh(self):
-        self.RequestSQL = self.text.get("1.0", "end")
-        tempSQLArray = self.RequestSQL.split("\n")
-        tempSQLArray = self.filter_non_comment_lines(tempSQLArray)
-        RequestSQL = ' '.join(tempSQLArray).strip()
-        if not hasattr(self, 'LogData'):
-            if messagebox.askyesno(title="Данные не загружены", message="Журналы не загружены.Загрузить их сейчас?"):
-                self.data_reload()
-            else:
-                return    
 
-        self.NumberLabelText.set("| Результат: ")
-        self.RefreshLabelText.set("| Обработка запроса...")
-        try:
-            start = time()
-            self.df = self.ctx.execute(RequestSQL)
-            end = time() - start
-            RefreshTime = "| Время обработки: {:02.0f}:{:02.0f}:{:02.2f}".format(end // 3600, end % 3600 // 60, end % 60)
-            self.RefreshLabelText.set(RefreshTime)
-        except Exception as e:
-            messagebox.showerror("Ошибка", f"Ошибка обработка запроса: {str(e)}")
-            return
-        self.clear_treeview()
-        self.PopulateDataGrid()
-    # очистка окна результатов
-    def clear_treeview(self):
-        start = time()
-        for item in self.tree.get_children():
-            self.tree.delete(item)
-        end = time() - start
-    def SelectLogType(self, event):
-        self.LogType = self.logtype_select.get()
-        programstate.save_data(self)
-    # вывод датафрейма на экран 
-    def PopulateDataGrid(self):
-        if not hasattr(self, 'df'):
-            return
-        #Рисуем статус запроса
-        ResultNum = str(self.df.height)
-        ResultLastNum = ResultNum[-1:]
-        match ResultLastNum:
-            case "1":
-                strings = "строка"
-            case "1" | "2" | "3" | "4":
-                strings = "строки"
-            case _:
-                strings = "строк"
-        limit = ""
-        if self.df.height > config.SHOW_LIMIT:
-            limit = " Показаны первые " + str(config.SHOW_LIMIT) + "."
-        ResultString = "| Результат: " + ResultNum + " " + strings + "." + limit
-        self.NumberLabelText.set(ResultString)
-        self.tree['columns'] = self.df.columns # self.LogData.columns - список с перечислением имен полей датафрейма. self.tree['columns'] - кортеж из имен колонок treeview
-        for col in self.df.columns:
-            self.tree.heading(col, text=col, command=lambda col=col: self.sort_treeview_column(col))
-            self.tree.column(col, width= 80, minwidth=80, stretch=0)  # Стандартная ширина
-        # Добавляем строки
-        for idx, row in enumerate(self.df.iter_rows()):
-            # Преобразуем значения в строки для отображения
-            values = []
-            for value in row:
-                if isinstance(value, datetime):
-                    values.append(value.strftime('%Y-%m-%d %H:%M:%S'))
-                else:
-                    values.append(str(value))
-            
-            self.tree.insert('', tk.END, text=str(idx), values=values)
-            if(idx>10000):
-                break
     # сохранение результата выборки в файле
     def SaveCSV(self):
-        #print(self.df)
-        f = filedialog.asksaveasfilename(initialfile = 'Untitled.csv', defaultextension=".csv",filetypes=[("Все файлы","*.*"),("Документы CSV","*.csv")])
-        print("=================",type(f))
-        if len(f) > 1:
-            f = f.replace("/","\\")
-            try:
-                self.df.write_csv(f)
-            except Exception as e:
-                messagebox.showerror("Ошибка", f"Не получилось сохранить файл: {str(e)}")
+        if hasattr(self, 'df'):
+            self.file_manager.save_csv(self.df)
+
+    def ShowHelp(self):
+        messagebox.showinfo("Краткая справка", config.HELP_TEXT)
+
     def SelectDelimiter(self, event):
         self.Delimiter = self.delimiter_select.get()
         programstate.save_data(self)
@@ -255,7 +151,6 @@ class LogExplorer(tk.Frame):
         else:
             sorted_data = sorted(item_list, key=lambda x: key_func(x[1]))
             self.sort_direction[col_name] = 'ascending'
-        print("z")        
         for item in self.tree.get_children(""):
             self.tree.delete(item)
         for item_id, values in sorted_data:
@@ -273,7 +168,7 @@ class LogExplorer(tk.Frame):
         end = time() - start
     # Выборка данных из списка журналов. Вызывает конкретную функцию загрузки в зависимости от типа журнала
     def LoadData(self):
-        if len(self.filelist) < 1:
+        if len(self.file_manager.get_filelist()) < 1:
             messagebox.showerror(title="Не выбраны журналы", message="Выберите файлы на закладке 'Выбор журналов'")
             return
         start = time()
@@ -295,7 +190,6 @@ class LogExplorer(tk.Frame):
 
     def on_window_resize(self, event):
         # Обработка изменения размера основного окна
-        # какая-то дикая ошибка накапливается, лень разбираться, сделал затычку.
         ratio = 1
         constframes = self.grid_icon_frame.cget('height')+ self.divider_frame.cget('height')
         #return
@@ -332,6 +226,91 @@ class LogExplorer(tk.Frame):
         result = re.sub(pattern, '', input_string)
         return result
 
+    def TimezoneSet(self, TZVal):
+        if re.match("^[+-]{0,1}0{0,1}(?:2[0-3]{0,1}|1{0,1}[0-9]{0,1})$", TZVal):
+            self.Timezone = int(TZVal)
+            programstate.save_data(self)
+            return True
+        else:
+            messagebox.showerror(title=config.WRONG_TIMEZONE_HEADER, message=config.WRONG_TIMEZONE)
+            self.ZoneCorrection.delete(0, tk.END)
+            self.ZoneCorrection.insert(0, str(self.Timezone))
+            return False
+        
+    # запускает выборку с SQL-запросом из окна редактора запроса
+    def data_refresh(self):
+        self.RequestSQL = self.text.get("1.0", "end")
+        tempSQLArray = self.RequestSQL.split("\n")
+        tempSQLArray = self.filter_non_comment_lines(tempSQLArray)
+        RequestSQL = ' '.join(tempSQLArray).strip()
+        if not hasattr(self, 'LogData'):
+            if messagebox.askyesno(title="Данные не загружены", message="Журналы не загружены.Загрузить их сейчас?"):
+                self.data_reload()
+            else:
+                return    
+
+        self.NumberLabelText.set("| Результат: ")
+        self.RefreshLabelText.set("| Обработка запроса...")
+        try:
+            start = time()
+            self.df = self.ctx.execute(RequestSQL)
+            end = time() - start
+            RefreshTime = "| Время обработки: {:02.0f}:{:02.0f}:{:02.2f}".format(end // 3600, end % 3600 // 60, end % 60)
+            self.RefreshLabelText.set(RefreshTime)
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Ошибка обработка запроса: {str(e)}")
+            return
+        self.clear_treeview()
+        self.PopulateDataGrid()
+
+    # очистка окна результатов
+    def clear_treeview(self):
+        start = time()
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        end = time() - start
+
+    def SelectLogType(self, event):
+        self.LogType = self.logtype_select.get()
+        programstate.save_data(self)
+
+    # вывод датафрейма на экран 
+    def PopulateDataGrid(self):
+        if not hasattr(self, 'df'):
+            return
+        #Рисуем статус запроса
+        ResultNum = str(self.df.height)
+        ResultLastNum = ResultNum[-1:]
+        match ResultLastNum:
+            case "1":
+                strings = "строка"
+            case "1" | "2" | "3" | "4":
+                strings = "строки"
+            case _:
+                strings = "строк"
+        limit = ""
+        if self.df.height > config.SHOW_LIMIT:
+            limit = " Показаны первые " + str(config.SHOW_LIMIT) + "."
+        ResultString = "| Результат: " + ResultNum + " " + strings + "." + limit
+        self.NumberLabelText.set(ResultString)
+        self.tree['columns'] = self.df.columns # self.LogData.columns - список с перечислением имен полей датафрейма. self.tree['columns'] - кортеж из имен колонок treeview
+        for col in self.df.columns:
+            self.tree.heading(col, text=col, command=lambda col=col: self.sort_treeview_column(col))
+            self.tree.column(col, width= 80, minwidth=80, stretch=0)  # Стандартная ширина
+        # Добавляем строки
+        for idx, row in enumerate(self.df.iter_rows()):
+            # Преобразуем значения в строки для отображения
+            values = []
+            for value in row:
+                if isinstance(value, datetime):
+                    values.append(value.strftime('%Y-%m-%d %H:%M:%S'))
+                else:
+                    values.append(str(value))
+            
+            self.tree.insert('', tk.END, text=str(idx), values=values)
+            if(idx>10000):
+                break
+
 def main():
     splash_root.destroy()
     root = tk.Tk()
@@ -355,20 +334,21 @@ splash_root = tk.Tk()
 # Центрируем на экране
 screen_width = splash_root.winfo_screenwidth()
 screen_height = splash_root.winfo_screenheight()
-x = (screen_width - 580) // 2
-y = (screen_height - 387)  // 2
-splash_root.geometry(f"580x387+{x}+{y}")    
+x = (screen_width - config.SPLASH_WIDTH) // 2
+y = (screen_height - config.SPLASH_HEIGHT)  // 2
+splash_root.geometry(f"{config.SPLASH_WIDTH}x{config.SPLASH_HEIGHT}+{x}+{y}")    
 
 splash_root.overrideredirect(True)
 #splash_root.attributes('-alpha',0.5)
-splash_root.wm_attributes("-transparentcolor", 'pink')
+splash_root.wm_attributes("-transparentcolor", config.SPLASH_BG_COLOR)
 splash_root.image_splash = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.splash))))
-splash_label = tk.Label(splash_root, bg='pink', image=splash_root.image_splash)
+splash_label = tk.Label(splash_root, bg=config.SPLASH_BG_COLOR, image=splash_root.image_splash)
 
 splash_label.pack()
-splash_root.after(2000, main)
+splash_root.after(config.SPLASH_DISPLAY_TIME, main)
 
 tk.mainloop()
 
 #if __name__ == "__main__":
 #    main()
+

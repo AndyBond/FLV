@@ -8,6 +8,7 @@ def init_file(dataclass):
         appdata_path = os.path.join(os.getenv('LOCALAPPDATA') or os.path.expanduser('~/.config'), 'FLV')
         os.makedirs(appdata_path, exist_ok=True)
         dataclass.json_path = os.path.join(appdata_path, 'flvconfig.json')
+
 def LoadState(dataclass):
     # Load data from JSON file if it exists
     try:
@@ -16,23 +17,26 @@ def LoadState(dataclass):
                 data = json.load(file)
             
             # Select items in listbox
-            dataclass.filelist = data.get("logs_list", [])
+            dataclass.file_manager.set_filelist(data.get("logs_list", []))
             dataclass.LogType = data.get("LogType")
             dataclass.Delimiter = data.get("Delimiter")
-
+            if data.get("Timezone") is not None:
+                dataclass.Timezone = data.get("Timezone")
     except Exception as e:
         messagebox.showerror("Ошибка загрузки", f"Не получилось загрузить сохраненные данные  {str(e)}")
 
 def save_data(dataclass):
     #text_data = self.text_input.get()
     LogType = dataclass.LogType
-    selected_items = list(dataclass.filelist)
+    selected_items = dataclass.file_manager.get_filelist()
     Delimiter = dataclass.Delimiter
+    Timezone = dataclass.Timezone
 
     data = {
         "LogType": LogType,
         "logs_list": selected_items,
-        "Delimiter": Delimiter
+        "Delimiter": Delimiter,
+        "Timezone": Timezone
     }
     try:
         with open(dataclass.json_path, 'w') as file:

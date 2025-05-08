@@ -1,7 +1,6 @@
 # Это будет модуль для всякий интерфейсных штучек
 from tkinter import ttk
 import tkinter as tk
-from functools import partial
 
 # Таб данных
 def SetupIconFrame(frame):
