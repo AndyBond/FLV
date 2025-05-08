@@ -16,7 +16,7 @@ class FileManager:
         self.files_listbox.delete(0, tk.END)
         for sf in self.filelist:
             self.files_listbox.insert(tk.END, sf)
-
+    # Вызов окна диалога выбора файлов и добавление выбранного в список с исключением дубликатов
     def select_files(self):
         """Выбор файлов через диалоговое окно"""
         filepaths = filedialog.askopenfilenames(
@@ -40,7 +40,7 @@ class FileManager:
         self.files_listbox.delete(0, tk.END)
         self.filelist.clear()
         programstate.save_data(self.parent)
-
+    # удаление выбранных файлов из списка журналов
     def clear_selected_files(self):
         """Удаление выбранных файлов из списка"""
         ListToDelete = self.files_listbox.curselection()
@@ -51,9 +51,12 @@ class FileManager:
         for i in self.files_listbox.get(0, self.files_listbox.size()):
             self.filelist.append(i)
         programstate.save_data(self.parent)
-
-    def save_csv(self, df):
+    # сохранение результата выборки в файл
+    def save_csv(self):
         """Сохранение данных в CSV файл"""
+        if not hasattr(self.parent, 'df'):
+            messagebox.showerror("Ошибка", "Нет данных для сохранения")
+            return False
         f = filedialog.asksaveasfilename(
             initialfile=config.SAVE_DIALOG_DEFAULT_NAME,
             defaultextension=".csv",
@@ -62,7 +65,7 @@ class FileManager:
         if len(f) > 1:
             f = f.replace("/", "\\")
             try:
-                df.write_csv(f)
+                self.parent.df.write_csv(f)
                 return True
             except Exception as e:
                 messagebox.showerror("Ошибка", f"Не получилось сохранить файл: {str(e)}")

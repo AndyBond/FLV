@@ -102,28 +102,13 @@ class LogExplorer(tk.Frame):
     def button_clicked(self):
         print("Button")
 
-    # удаление всех файлов из списка журналов
-    def clear_files(self):
-        self.file_manager.clear_files()
 
-    # удаление выбранных файлов из списка журналов
-    def clear_selected_files(self):
-        self.file_manager.clear_selected_files()
-
-    # Вызов окна диалога выбора файлов и добавление выбранного в список с исключением дубликатов
-    def select_files(self):
-        self.file_manager.select_files()
 
     # подключает файлы, указанные в списке "Выбранные журналы" и грузит минимальную выборку (дефолтный SQL) 
     def data_reload(self):
         self.LoadData()
         self.clear_treeview()
         self.PopulateDataGrid()
-
-    # сохранение результата выборки в файле
-    def SaveCSV(self):
-        if hasattr(self, 'df'):
-            self.file_manager.save_csv(self.df)
 
     def ShowHelp(self):
         messagebox.showinfo("Краткая справка", config.HELP_TEXT)
