@@ -29,6 +29,7 @@ class LogExplorer(tk.Frame):
         self.LogTypes = config.LOG_TYPES 
         self.Delimiter = config.DEFAULT_DELIMITER
         self.Timezone = config.DEFAULT_TIMEZONE
+        self.current_request_name = None  # Имя текущего запроса
         #self.filelist =[] #сюда будем складывать списки логов. Список передадим поларсу
         self.file_manager = filemanager.FileManager(self)
         self.json_path = "" #здесь будут храниться данные о состоянии программы (конфиг, текущие данные и тп)
@@ -147,9 +148,14 @@ class LogExplorer(tk.Frame):
         label = ttk.Label(dialog, text="Введите имя запроса:")
         label.pack(pady=10)
         
+        # Определяем значение по умолчанию
+        default_value = self.current_request_name if self.current_request_name else f"{self.LogType} новый запрос"
+        
         entry = ttk.Entry(dialog, width=50)  # Увеличенная ширина поля ввода
+        entry.insert(0, default_value)  # Вставляем значение по умолчанию
         entry.pack(pady=10, padx=20, fill=tk.X)
         entry.focus_set()
+        entry.select_range(0, tk.END)  # Выделяем весь текст для удобства замены
         
         result = [None]  # Список для хранения результата
         
@@ -204,6 +210,10 @@ class LogExplorer(tk.Frame):
             with open(requests_file, 'w', encoding='utf-8') as f:
                 json.dump(requests_data, f, ensure_ascii=False, indent=4)
             messagebox.showinfo("Успех", "Запрос успешно сохранен")
+            # Обновляем имя текущего запроса
+            self.current_request_name = request_name
+            # Обновляем список запросов
+            self.load_saved_requests()
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось сохранить запрос: {str(e)}")
 
@@ -427,6 +437,8 @@ class LogExplorer(tk.Frame):
                     self.text.delete("1.0", tk.END)
                     # Вставляем текст запроса
                     self.text.insert("1.0", requests_data["requests"][request_name])
+                    # Сохраняем имя текущего запроса
+                    self.current_request_name = request_name
                     # Переключаемся на таб с редактором
                     self.tabControl.select(0)
         except Exception as e:
