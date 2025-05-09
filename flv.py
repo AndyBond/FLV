@@ -5,11 +5,13 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
+from tkinter import simpledialog
 #import tkinter.font as tkFont
 from time import time
 from datetime import datetime
 from PIL import Image, ImageTk
 from io import BytesIO
+import json
 
 #моё
 import programstate, btn, ui, loaders, config, img, filemanager
@@ -46,32 +48,25 @@ class LogExplorer(tk.Frame):
         self.tab_front = ttk.Frame(self.tabControl) # Таб для грида. создание
         self.tab_front.pack_propagate(0)
         self.tab_files = ttk.Frame(self.tabControl) # Таб для списка файлов. создание
+        self.tab_requests = ttk.Frame(self.tabControl) # Таб для запросов. создание
         self.tabControl.add(self.tab_front, text =config.DATATAB_LABEL) # помещаем таб грида в ноутбук
         self.tabControl.add(self.tab_files, text =config.FILESTAB_LABEL) # помещаем таб списка файлов в ноутбук
+        self.tabControl.add(self.tab_requests, text="Запросы") # помещаем таб запросов в ноутбук
         self.tabControl.pack(expand = 1, fill =tk.BOTH) 
 
+        # Инициализация основных компонентов
         ui.SetupIconFrame(self)     # фрейм для иконок на табе "Данные"
         ui.SetupDataFrame(self)     # Фрейм для вывода данных
         ui.SetupDividerFrame(self)  # Подвижный разделитель между фреймами
         ui.SetupRequestFrame(self)  # Фрейм для вывода данных
-        btn.DrawDataButtons(self)   # Кнопки на табе с данными
         ui.SetupDataGrid(self)      # Treeview с результатами запроса
         ui.SetupRequestEditor(self) # Окно редактора запроса
-        self.parent.update()
-        self.total_height = self.tab_front.winfo_height()
-        self.tree_frame.configure(height=self.total_height/2)
-        self.request_frame.configure(height=self.total_height/2)
-        self.parent.bind("<Configure>", self.on_window_resize)
-        # ============================================================================================================================================
-        # Контролы таба выбора файлов
+        
+        # Инициализация компонентов таба файлов
         self.files_icon_frame = tk.Frame(self.tab_files, height=50)
         self.files_icon_frame.pack(fill=tk.X, padx=10, pady=10)
-
-        # Фрейм для списка файлов
         self.files_frame = tk.Frame(self.tab_files)
         self.files_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)    
-
-        btn.DrawFilesButtons(self)
 
         # Заголовок списка файлов
         self.files_label = tk.Label(self.files_frame, text=config.SELECTED_LOGS, anchor="w")
@@ -97,6 +92,25 @@ class LogExplorer(tk.Frame):
         # Configure the scrollbar
         self.scrollbar.config(command=self.files_listbox.yview)
 
+        btn.DrawFilesButtons(self)
+
+        # Инициализация компонентов таба запросов
+        ui.SetupRequestsFrame(self) # Фрейм для списка запросов
+        btn.DrawRequestsButtons(self) # Кнопки на табе с запросами
+        
+        # Инициализация кнопок основного таба
+        btn.DrawDataButtons(self)   # Кнопки на табе с данными
+
+        # Загрузка сохраненных запросов после инициализации всех компонентов
+        self.parent.update()
+        self.total_height = self.tab_front.winfo_height()
+        self.tree_frame.configure(height=self.total_height/2)
+        self.request_frame.configure(height=self.total_height/2)
+        self.parent.bind("<Configure>", self.on_window_resize)
+        
+        # Загружаем список сохраненных запросов
+        self.load_saved_requests()
+
     # ==============================================================================================================
     # Кнопочные функции
     def button_clicked(self):
@@ -112,6 +126,86 @@ class LogExplorer(tk.Frame):
 
     def ShowHelp(self):
         messagebox.showinfo("Краткая справка", config.HELP_TEXT)
+
+    def save_request(self):
+        # Создаем диалоговое окно
+        dialog = tk.Toplevel(self.parent)
+        dialog.title("Сохранение запроса")
+        dialog.geometry("600x150")  # Увеличенная ширина
+        dialog.transient(self.parent)  # Делаем окно зависимым от главного
+        dialog.grab_set()  # Делаем окно модальным
+        
+        # Центрируем окно
+        dialog.update_idletasks()
+        width = dialog.winfo_width()
+        height = dialog.winfo_height()
+        x = (dialog.winfo_screenwidth() // 2) - (width // 2)
+        y = (dialog.winfo_screenheight() // 2) - (height // 2)
+        dialog.geometry(f'{width}x{height}+{x}+{y}')
+        
+        # Создаем и размещаем элементы
+        label = ttk.Label(dialog, text="Введите имя запроса:")
+        label.pack(pady=10)
+        
+        entry = ttk.Entry(dialog, width=50)  # Увеличенная ширина поля ввода
+        entry.pack(pady=10, padx=20, fill=tk.X)
+        entry.focus_set()
+        
+        result = [None]  # Список для хранения результата
+        
+        def on_ok():
+            result[0] = entry.get()
+            dialog.destroy()
+            
+        def on_cancel():
+            dialog.destroy()
+            
+        def on_enter(event):
+            on_ok()
+            
+        # Привязываем Enter к кнопке OK
+        entry.bind('<Return>', on_enter)
+        
+        # Кнопки
+        button_frame = ttk.Frame(dialog)
+        button_frame.pack(pady=10)
+        
+        ok_button = ttk.Button(button_frame, text="OK", command=on_ok)
+        ok_button.pack(side=tk.LEFT, padx=5)
+        
+        cancel_button = ttk.Button(button_frame, text="Отмена", command=on_cancel)
+        cancel_button.pack(side=tk.LEFT, padx=5)
+        
+        # Ждем закрытия окна
+        dialog.wait_window()
+        
+        request_name = result[0]
+        if not request_name:
+            return
+            
+        # Получаем текст запроса из виджета
+        request_text = self.text.get("1.0", "end").strip()
+        
+        # Путь к файлу с запросами
+        requests_file = os.path.join(os.path.dirname(self.json_path), "flvrequests.json")
+        
+        # Загружаем существующие запросы или создаем новый словарь
+        try:
+            with open(requests_file, 'r', encoding='utf-8') as f:
+                requests_data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            requests_data = {"requests": {}}
+            
+        # Обновляем или добавляем новый запрос
+        requests_data["requests"][request_name] = request_text
+        
+        # Сохраняем обновленные данные
+        try:
+            with open(requests_file, 'w', encoding='utf-8') as f:
+                json.dump(requests_data, f, ensure_ascii=False, indent=4)
+            messagebox.showinfo("Успех", "Запрос успешно сохранен")
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось сохранить запрос: {str(e)}")
 
     def SelectDelimiter(self, event):
         self.Delimiter = self.delimiter_select.get()
@@ -295,6 +389,48 @@ class LogExplorer(tk.Frame):
             self.tree.insert('', tk.END, text=str(idx), values=values)
             if(idx>10000):
                 break
+
+    def load_saved_requests(self):
+        """Загружает список сохраненных запросов в Listbox"""
+        if not hasattr(self, 'requests_listbox'):
+            return
+            
+        try:
+            requests_file = os.path.join(os.path.dirname(self.json_path), "flvrequests.json")
+            with open(requests_file, 'r', encoding='utf-8') as f:
+                requests_data = json.load(f)
+                # Очищаем список
+                self.requests_listbox.delete(0, tk.END)
+                # Добавляем имена запросов
+                for request_name in requests_data["requests"].keys():
+                    self.requests_listbox.insert(tk.END, request_name)
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass  # Файл не существует или пустой
+
+    def load_request(self):
+        """Загружает выбранный запрос в редактор"""
+        if not hasattr(self, 'requests_listbox') or not hasattr(self, 'text'):
+            return
+            
+        selection = self.requests_listbox.curselection()
+        if not selection:
+            messagebox.showwarning("Предупреждение", "Выберите запрос из списка")
+            return
+            
+        request_name = self.requests_listbox.get(selection[0])
+        try:
+            requests_file = os.path.join(os.path.dirname(self.json_path), "flvrequests.json")
+            with open(requests_file, 'r', encoding='utf-8') as f:
+                requests_data = json.load(f)
+                if request_name in requests_data["requests"]:
+                    # Очищаем текущий текст
+                    self.text.delete("1.0", tk.END)
+                    # Вставляем текст запроса
+                    self.text.insert("1.0", requests_data["requests"][request_name])
+                    # Переключаемся на таб с редактором
+                    self.tabControl.select(0)
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось загрузить запрос: {str(e)}")
 
 def main():
     splash_root.destroy()

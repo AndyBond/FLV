@@ -39,6 +39,20 @@ def DrawDataButtons(frame):
     )
     frame.refresh_button.pack(side=tk.LEFT, padx=(10,0), ipadx=5)
 
+    # Кнопка сохранения запроса
+    frame.save_request_btn = tk.Button(
+        frame.grid_icon_frame,
+        image=frame.image_refresh,
+        text="Сохранить запрос",
+        compound=tk.LEFT,
+        cursor="hand2",
+        command=frame.save_request,
+        name="save_request",
+        bd=0,
+        height=40
+    )
+    frame.save_request_btn.pack(side=tk.LEFT, padx=(10,0), ipadx=5)
+
     # Кнопка Экспорт в CSV
     #frame.image_export = ImageTk.PhotoImage(Image.open("images\\icons8-export-csv-green-30.png"))
     frame.image_export = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.SaveCSV))))
@@ -157,8 +171,21 @@ def DrawFilesButtons(frame):
     frame.ZoneCorrection.pack(side=tk.LEFT, padx=0, ipadx=5)
     # действия кнопок
 
-
-
+def DrawRequestsButtons(frame):
+    # Кнопка загрузки запроса
+    frame.image_load = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.data_refresh))))
+    frame.load_request_btn = tk.Button(
+        frame.requests_icon_frame,
+        image=frame.image_load,
+        text=" Загрузить запрос ",
+        compound=tk.LEFT,
+        cursor="hand2",
+        command=frame.load_request,
+        name="load_request",
+        bd=0,
+        height=40
+    )
+    frame.load_request_btn.pack(side=tk.LEFT, padx=(10,0), ipadx=5)
 
 def data_export():
     pass

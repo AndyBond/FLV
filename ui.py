@@ -68,6 +68,29 @@ def SetupRequestEditor(frame):
         text_scroll_x.pack(side=tk.BOTTOM, fill=tk.X)
         frame.text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True) 
 
+def SetupRequestsFrame(frame):
+    # Верхний фрейм для кнопок
+    frame.requests_icon_frame = tk.Frame(frame.tab_requests, height=50)
+    frame.requests_icon_frame.pack(fill=tk.X, padx=10, pady=10)
+    frame.requests_icon_frame.pack_propagate(0)
+
+    # Нижний фрейм для списка запросов
+    frame.requests_frame = tk.Frame(frame.tab_requests)
+    frame.requests_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    frame.requests_frame.pack_propagate(0)
+
+    # Создаем Listbox для отображения запросов
+    frame.requests_listbox = tk.Listbox(
+        frame.requests_frame,
+        selectmode=tk.SINGLE
+    )
+    frame.requests_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+    # Добавляем скроллбар
+    requests_scrollbar = ttk.Scrollbar(frame.requests_frame, orient="vertical", command=frame.requests_listbox.yview)
+    requests_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    frame.requests_listbox.configure(yscrollcommand=requests_scrollbar.set)
+
 # Функции событий
 def on_divider_press(topclass, event):
     # Запоминаем начальное положение и размеры при нажатии кнопки мыши
