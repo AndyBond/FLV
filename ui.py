@@ -82,7 +82,7 @@ def SetupRequestsFrame(frame):
     # Создаем Listbox для отображения запросов
     frame.requests_listbox = tk.Listbox(
         frame.requests_frame,
-        selectmode=tk.SINGLE
+        selectmode=tk.EXTENDED
     )
     frame.requests_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
@@ -127,4 +127,4 @@ def on_divider_release(topclass, event):
     topclass.dragging = False
     # Обновляем размеры окна для фиксации новых значений
     topclass.tree_frame.pack(fill=tk.BOTH, expand=True)
-    topclass.request_frame.pack(fill=tk.BOTH, expand=True)   
+    topclass.request_frame.pack(fill=tk.BOTH, expand=True)
