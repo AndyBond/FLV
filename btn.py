@@ -187,6 +187,21 @@ def DrawRequestsButtons(frame):
     )
     frame.load_request_btn.pack(side=tk.LEFT, padx=(10,0), ipadx=5)
 
+    # Кнопка удаления запроса
+    frame.image_delete = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.clear_files))))
+    frame.delete_request_btn = tk.Button(
+        frame.requests_icon_frame,
+        image=frame.image_delete,
+        text=" Удалить запрос ",
+        compound=tk.LEFT,
+        cursor="hand2",
+        command=frame.delete_selected_requests,
+        name="delete_request",
+        bd=0,
+        height=40
+    )
+    frame.delete_request_btn.pack(side=tk.LEFT, padx=(10,0), ipadx=5)
+
 def data_export():
     pass
 

@@ -30,7 +30,6 @@ class LogExplorer(tk.Frame):
         self.Delimiter = config.DEFAULT_DELIMITER
         self.Timezone = config.DEFAULT_TIMEZONE
         self.current_request_name = None  # Имя текущего запроса
-        #self.filelist =[] #сюда будем складывать списки логов. Список передадим поларсу
         self.file_manager = filemanager.FileManager(self)
         self.json_path = "" #здесь будут храниться данные о состоянии программы (конфиг, текущие данные и тп)
         self.sort_direction = {}
@@ -443,6 +442,52 @@ class LogExplorer(tk.Frame):
                     self.tabControl.select(0)
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось загрузить запрос: {str(e)}")
+
+    def delete_selected_requests(self):
+        """Удаляет выбранные запросы из файла"""
+        if not hasattr(self, 'requests_listbox'):
+            return
+            
+        selection = self.requests_listbox.curselection()
+        if not selection:
+            messagebox.showwarning("Предупреждение", "Выберите запрос для удаления")
+            return
+            
+        # Получаем имена выбранных запросов
+        selected_requests = [self.requests_listbox.get(i) for i in selection]
+        
+        # Запрашиваем подтверждение
+        if len(selected_requests) == 1:
+            message = f"Удалить запрос '{selected_requests[0]}'?"
+        else:
+            message = f"Удалить выбранные запросы ({len(selected_requests)})?"
+            
+        if not messagebox.askyesno("Подтверждение", message):
+            return
+            
+        try:
+            requests_file = os.path.join(os.path.dirname(self.json_path), "flvrequests.json")
+            with open(requests_file, 'r', encoding='utf-8') as f:
+                requests_data = json.load(f)
+                
+            # Удаляем выбранные запросы
+            for request_name in selected_requests:
+                if request_name in requests_data["requests"]:
+                    del requests_data["requests"][request_name]
+                    # Если удаляем текущий запрос, сбрасываем его имя
+                    if request_name == self.current_request_name:
+                        self.current_request_name = None
+                        
+            # Сохраняем обновленные данные
+            with open(requests_file, 'w', encoding='utf-8') as f:
+                json.dump(requests_data, f, ensure_ascii=False, indent=4)
+                
+            # Обновляем список запросов
+            self.load_saved_requests()
+            messagebox.showinfo("Успех", "Запрос(ы) успешно удалены")
+            
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось удалить запрос(ы): {str(e)}")
 
 def main():
     splash_root.destroy()
