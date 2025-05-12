@@ -12,7 +12,6 @@ from datetime import datetime
 from PIL import Image, ImageTk
 from io import BytesIO
 import json
-
 #моё
 import programstate, btn, ui, loaders, config, img, filemanager
 

@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
 from io import BytesIO
+# моё
 import config, img
 
 # Кнопки на табе с датагридом
