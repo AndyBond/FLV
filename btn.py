@@ -40,9 +40,10 @@ def DrawDataButtons(frame):
     frame.refresh_button.pack(side=tk.LEFT, padx=(10,0), ipadx=5)
 
     # Кнопка сохранения запроса
+    frame.image_save_request = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.SaveRequest))))
     frame.save_request_btn = tk.Button(
         frame.grid_icon_frame,
-        image=frame.image_refresh,
+        image=frame.image_save_request,
         text="Сохранить запрос",
         compound=tk.LEFT,
         cursor="hand2",
@@ -173,7 +174,7 @@ def DrawFilesButtons(frame):
 
 def DrawRequestsButtons(frame):
     # Кнопка загрузки запроса
-    frame.image_load = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.data_refresh))))
+    frame.image_load = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.LoadRequest))))
     frame.load_request_btn = tk.Button(
         frame.requests_icon_frame,
         image=frame.image_load,
@@ -188,11 +189,11 @@ def DrawRequestsButtons(frame):
     frame.load_request_btn.pack(side=tk.LEFT, padx=(10,0), ipadx=5)
 
     # Кнопка удаления запроса
-    frame.image_delete = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.clear_files))))
+    frame.image_delete = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.clear_selected_files))))
     frame.delete_request_btn = tk.Button(
         frame.requests_icon_frame,
         image=frame.image_delete,
-        text=" Удалить запрос ",
+        text=" Удалить выбранные запросы ",
         compound=tk.LEFT,
         cursor="hand2",
         command=frame.delete_selected_requests,
