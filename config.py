@@ -14,8 +14,6 @@ DEFAULT_TIMEZONE = 3
 DATATAB_LABEL = "Данные"
 FILESTAB_LABEL = "Выбор журналов"
 
-
-
 WRONG_TIMEZONE ="Формат: целое число от -23 до (+)23"
 WRONG_TIMEZONE_HEADER = "Неправильный формат таймзоны"
 

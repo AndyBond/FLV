@@ -100,6 +100,7 @@ def SetupRequestsFrame(frame):
     requests_scrollbar = ttk.Scrollbar(frame.requests_frame, orient="vertical", command=frame.requests_listbox.yview)
     requests_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
     frame.requests_listbox.configure(yscrollcommand=requests_scrollbar.set)
+    
 # =========================================================================
 # таб выбора логов
 # фрейм с иконками
