@@ -12,7 +12,7 @@ def DrawDataButtons(frame):
     frame.refresh_button = tk.Button(
         frame.grid_icon_frame,
         image=frame.image_reload, 
-        text = ' Загрузить журналы ',
+        text = config.LOG_LOAD,
         compound=tk.LEFT,
         cursor="hand2",
         command=frame.data_reload,
@@ -28,7 +28,7 @@ def DrawDataButtons(frame):
     frame.refresh_button = tk.Button(
         frame.grid_icon_frame,
         image=frame.image_refresh, 
-        text = ' Запустить запрос ',
+        text = config.REQUEST_RUN,
         compound=tk.LEFT,
         cursor="hand2",
         command=frame.data_refresh,
@@ -40,10 +40,11 @@ def DrawDataButtons(frame):
     frame.refresh_button.pack(side=tk.LEFT, padx=(10,0), ipadx=5)
 
     # Кнопка сохранения запроса
+    frame.image_save_request = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.SaveRequest))))
     frame.save_request_btn = tk.Button(
         frame.grid_icon_frame,
-        image=frame.image_refresh,
-        text="Сохранить запрос",
+        image=frame.image_save_request,
+        text=config.REQUEST_SAVE,
         compound=tk.LEFT,
         cursor="hand2",
         command=frame.save_request,
@@ -54,12 +55,11 @@ def DrawDataButtons(frame):
     frame.save_request_btn.pack(side=tk.LEFT, padx=(10,0), ipadx=5)
 
     # Кнопка Экспорт в CSV
-    #frame.image_export = ImageTk.PhotoImage(Image.open("images\\icons8-export-csv-green-30.png"))
     frame.image_export = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.SaveCSV))))
     frame.export_button = tk.Button(
         frame.grid_icon_frame, 
         image=frame.image_export, 
-        text=" Экспорт в CSV ",
+        text=config.CSV_EXPORT,
         compound=tk.LEFT,
         cursor="hand2",
         command=frame.file_manager.save_csv,
@@ -74,7 +74,7 @@ def DrawDataButtons(frame):
     frame.help_button = tk.Button(
         frame.grid_icon_frame, 
         image=frame.image_help, 
-        text=" Справка ",
+        text=config.HELP_LABEL,
         compound=tk.LEFT,
         cursor="hand2",
         command=frame.ShowHelp,
@@ -92,7 +92,7 @@ def DrawFilesButtons(frame):
     frame.select_button = tk.Button(
         frame.files_icon_frame, 
         image=frame.image_select, 
-        text=" Добавить файлы",
+        text=config.FILES_ADD,
         cursor="hand2",
         command=frame.file_manager.select_files,
         name="select_files",
@@ -108,7 +108,7 @@ def DrawFilesButtons(frame):
     frame.clear_selection_button = tk.Button(
         frame.files_icon_frame, 
         image=frame.image_clear_selection, 
-        text=" Удалить выбранные",
+        text=config.FILES_REMOVE_SELECTED,
         cursor="hand2",
         command=frame.file_manager.clear_selected_files,
         name="clear_selected_files",
@@ -125,7 +125,7 @@ def DrawFilesButtons(frame):
     frame.clear_button = tk.Button(
         frame.files_icon_frame, 
         image=frame.image_clear, 
-        text=" Удалить все",
+        text=config.FILES_REMOVE_ALL,
         cursor="hand2",
         command=frame.file_manager.clear_files,
         name="clear_files",
@@ -173,11 +173,11 @@ def DrawFilesButtons(frame):
 
 def DrawRequestsButtons(frame):
     # Кнопка загрузки запроса
-    frame.image_load = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.data_refresh))))
+    frame.image_load = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.LoadRequest))))
     frame.load_request_btn = tk.Button(
         frame.requests_icon_frame,
         image=frame.image_load,
-        text=" Загрузить запрос ",
+        text=config.REQUEST_LOAD,
         compound=tk.LEFT,
         cursor="hand2",
         command=frame.load_request,
@@ -188,11 +188,11 @@ def DrawRequestsButtons(frame):
     frame.load_request_btn.pack(side=tk.LEFT, padx=(10,0), ipadx=5)
 
     # Кнопка удаления запроса
-    frame.image_delete = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.clear_files))))
+    frame.image_delete = ImageTk.PhotoImage(Image.open(BytesIO(img.b64_to_bin(img.clear_selected_files))))
     frame.delete_request_btn = tk.Button(
         frame.requests_icon_frame,
         image=frame.image_delete,
-        text=" Удалить запрос ",
+        text=config.REQUEST_REMOVE_SELECTED,
         compound=tk.LEFT,
         cursor="hand2",
         command=frame.delete_selected_requests,
@@ -202,11 +202,4 @@ def DrawRequestsButtons(frame):
     )
     frame.delete_request_btn.pack(side=tk.LEFT, padx=(10,0), ipadx=5)
 
-def data_export():
-    pass
 
-def data_reload(dataobject):
-     pass
-
-def data_refresh(dataobject):
-    pass
