@@ -55,78 +55,47 @@ class LogExplorer(tk.Frame):
         self.tabControl.pack(expand = 1, fill =tk.BOTH) 
 
         # Инициализация основных компонентов
-        ui.SetupIconFrame(self)     # фрейм для иконок на табе "Данные"
-        ui.SetupDataFrame(self)     # Фрейм для вывода данных
-        ui.SetupDividerFrame(self)  # Подвижный разделитель между фреймами
-        ui.SetupRequestFrame(self)  # Фрейм для вывода данных
-        ui.SetupDataGrid(self)      # Treeview с результатами запроса
-        ui.SetupRequestEditor(self) # Окно редактора запроса
-        
-        # Инициализация компонентов таба файлов
-        self.files_icon_frame = tk.Frame(self.tab_files, height=50)
-        self.files_icon_frame.pack(fill=tk.X, padx=10, pady=10)
-        self.files_frame = tk.Frame(self.tab_files)
-        self.files_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)    
-
-        # Заголовок списка файлов
-        self.files_label = tk.Label(self.files_frame, text=config.SELECTED_LOGS, anchor="w")
-        self.files_label.pack(fill=tk.X, pady=(0, 5))
-
-        # Create a frame for the list and scrollbar
-        self.list_frame = tk.Frame(self.files_frame)
-        self.list_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Scrollbar for the list
-        self.scrollbar = tk.Scrollbar(self.list_frame)
-        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        # Listbox to display selected files
-        self.files_listbox = tk.Listbox(
-            self.list_frame,
-            yscrollcommand=self.scrollbar.set,
-            selectmode=tk.EXTENDED
-        )
-        self.file_manager.setup_listbox(self.files_listbox)
-        self.files_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        
-        # Configure the scrollbar
-        self.scrollbar.config(command=self.files_listbox.yview)
-
-        btn.DrawFilesButtons(self)
+        ui.SetupIconFrame(self)         # фрейм для иконок на табе "Данные"
+        ui.SetupDataFrame(self)         # Фрейм для вывода данных
+        ui.SetupDividerFrame(self)      # Подвижный разделитель между фреймами
+        ui.SetupRequestFrame(self)      # Фрейм для вывода данных
+        ui.SetupDataGrid(self)          # Treeview с результатами запроса
+        ui.SetupRequestEditor(self)     # Окно редактора запроса
+        # Инициализация компонентов таба работы с журналами
+        ui.SetupFilesIconFrame(self)    # фрейм иконок на табе "выбор журналов"
+        ui.SetupFileListFrame(self)     # фрейм списка выбранных журналов
+        ui.SetupFileList(self)          # сам список журналов
+        btn.DrawFilesButtons(self)      # кнопочки работы с журналами
 
         # Инициализация компонентов таба запросов
         ui.SetupRequestsFrame(self) # Фрейм для списка запросов
         btn.DrawRequestsButtons(self) # Кнопки на табе с запросами
-        
-        # Инициализация кнопок основного таба
+
         btn.DrawDataButtons(self)   # Кнопки на табе с данными
 
         # Загрузка сохраненных запросов после инициализации всех компонентов
         self.parent.update()
+        # начальное соотношение фреймов данных и запроса должно быть 1 к 1, но из-за всякого, соотношение не соблюдается. Когда-нибудь надо исправить
         self.total_height = self.tab_front.winfo_height()
         self.tree_frame.configure(height=self.total_height/2)
         self.request_frame.configure(height=self.total_height/2)
-        self.parent.bind("<Configure>", self.on_window_resize)
+        self.parent.bind("<Configure>", self.on_window_resize) # пересчет размера фреймов при изменении размера окна программы
         
         # Загружаем список сохраненных запросов
         self.load_saved_requests()
 
     # ==============================================================================================================
     # Кнопочные функции
-    def button_clicked(self):
-        print("Button")
-
-
 
     # подключает файлы, указанные в списке "Выбранные журналы" и грузит минимальную выборку (дефолтный SQL) 
     def data_reload(self):
         self.LoadData()
         self.clear_treeview()
         self.PopulateDataGrid()
-
+    # messagebox с самой краткой инструкцией
     def ShowHelp(self):
         messagebox.showinfo("Краткая справка", config.HELP_TEXT)
-
+    # сохраняет текущий запрос на диск (будет виден в списке запросов)
     def save_request(self):
         # Создаем диалоговое окно
         dialog = tk.Toplevel(self.parent)
@@ -190,6 +159,7 @@ class LogExplorer(tk.Frame):
             
         # Получаем текст запроса из виджета
         request_text = self.text.get("1.0", "end").strip()
+        # тут нужно почистить от всякого. может быть....
         
         # Путь к файлу с запросами
         requests_file = os.path.join(os.path.dirname(self.json_path), "flvrequests.json")
@@ -369,6 +339,7 @@ class LogExplorer(tk.Frame):
         #Рисуем статус запроса
         ResultNum = str(self.df.height)
         ResultLastNum = ResultNum[-1:]
+        TagStyle = "oddrow"
         match ResultLastNum:
             case "1":
                 strings = "строка"
@@ -395,7 +366,12 @@ class LogExplorer(tk.Frame):
                 else:
                     values.append(str(value))
             
-            self.tree.insert('', tk.END, text=str(idx), values=values)
+            # присваиваем тэги через строку (по тэгам будем красить)
+            if TagStyle == "oddrow":
+                TagStyle = "evenrow"
+            else:
+                TagStyle = "oddrow"
+            self.tree.insert('', tk.END, text=str(idx), values=values, tags=TagStyle)
             if(idx>10000):
                 break
 
