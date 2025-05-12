@@ -44,11 +44,7 @@ def DrawDataButtons(frame):
     frame.save_request_btn = tk.Button(
         frame.grid_icon_frame,
         image=frame.image_save_request,
-<<<<<<< HEAD
         text=config.REQUEST_SAVE,
-=======
-        text="Сохранить запрос",
->>>>>>> 66f8bdee4344c78c9309722060cef6a7c11e9a92
         compound=tk.LEFT,
         cursor="hand2",
         command=frame.save_request,
@@ -196,11 +192,7 @@ def DrawRequestsButtons(frame):
     frame.delete_request_btn = tk.Button(
         frame.requests_icon_frame,
         image=frame.image_delete,
-<<<<<<< HEAD
         text=config.REQUEST_REMOVE_SELECTED,
-=======
-        text=" Удалить выбранные запросы ",
->>>>>>> 66f8bdee4344c78c9309722060cef6a7c11e9a92
         compound=tk.LEFT,
         cursor="hand2",
         command=frame.delete_selected_requests,
