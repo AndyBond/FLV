@@ -89,8 +89,16 @@ class LogExplorer(tk.Frame):
     # подключает файлы, указанные в списке "Выбранные журналы" и грузит минимальную выборку (дефолтный SQL) 
     def data_reload(self):
         self.LoadData()
+        # Сохраняем ширину колонок перед очисткой
+        column_widths = {}
+        for col in self.tree['columns']:
+            column_widths[col] = self.tree.column(col, 'width')
         self.clear_treeview()
         self.PopulateDataGrid()
+        # Восстанавливаем ширину колонок
+        for col, width in column_widths.items():
+            if col in self.tree['columns']:
+                self.tree.column(col, width=width)
     # messagebox с самой краткой инструкцией
     def ShowHelp(self):
         messagebox.showinfo("Краткая справка", config.HELP_TEXT)
@@ -317,8 +325,19 @@ class LogExplorer(tk.Frame):
         except Exception as e:
             messagebox.showerror("Ошибка", f"Ошибка обработка запроса: {str(e)}")
             return
+
+        # Сохраняем ширину колонок перед очисткой
+        column_widths = {}
+        for col in self.tree['columns']:
+            column_widths[col] = self.tree.column(col, 'width')
+
         self.clear_treeview()
         self.PopulateDataGrid()
+
+        # Восстанавливаем ширину колонок
+        for col, width in column_widths.items():
+            if col in self.tree['columns']:
+                self.tree.column(col, width=width)
 
     # очистка окна результатов
     def clear_treeview(self):
